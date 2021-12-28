@@ -1,22 +1,29 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using TollCalculator.Models;
 
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
-namespace TollCalculator.Models
+namespace TollCalculator
 {
     [ApiController]
     [Route("TollCalculator")]    
     public class TollController : ControllerBase
     {
+        private readonly IExtension extension;
+        public TollController(IExtension extension)
+        { 
+            this.extension = extension;
+        }
+
         [HttpPost("{query}")]
-        public ActionResult<string> CalculateToll(Query query)
+        public ActionResult<decimal> CalculateToll(Query query)
         {
-            if (query == null )
+            if (!extension.IsQueryValid(query))
             {
                 return BadRequest();
             }
-            return Extensions.CalculateToll(query.vehicleType, query.passingDates);
+            return extension.CalculateToll(query.vehicleType, query.passingDates);
         }
     }
 }

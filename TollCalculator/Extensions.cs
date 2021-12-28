@@ -2,17 +2,25 @@ using Nager.Date;
 using TollCalculator.Models;
 namespace TollCalculator
 {
-    public static class Extensions
-    {
-        /**
-             * Calculate the total toll fee for one day
+            /**
+             * Calculate the total toll fee for multiple days
              *
              * @param vehicleType - the type of vehicle
              * @param dates   - date and time of all passes on one day
-             * @return - the total congestion tax for that day
+             * @return - the total congestion tax for that day in decimal
              */
+    public class Extensions:IExtension
+    {
+        private readonly VehicleTypes[] TollFreeVehicleTypes = new VehicleTypes[] 
+        {   VehicleTypes.Motorcycle,
+            VehicleTypes.Emergency,
+            VehicleTypes.Diplomat, 
+            VehicleTypes.Foreign,
+            VehicleTypes.Military,
+            VehicleTypes.Bus 
+        };       
 
-        public static string CalculateToll(VehicleTypes vehicleType, DateTime[] dates)
+        public decimal CalculateToll(VehicleTypes vehicleType, DateTime[] dates)
         {
             var orderedDates = dates.OrderBy(x => x).ToList();
 
@@ -24,7 +32,7 @@ namespace TollCalculator
 
             foreach (DateTime date in orderedDates)
             {
-                if (intervalStart.DayOfYear != date.DayOfYear)
+                if (DateTime.Compare(intervalStart, date) != 0)
                 {
                     totalFee += totalFeeCurrentDay;
                     if (totalFee > (dailyFeeCeiling * uniqueDayCount))
@@ -61,22 +69,12 @@ namespace TollCalculator
                 totalFeeCurrentDay = dailyFeeCeiling;
             }
 
-            return (totalFee + totalFeeCurrentDay).ToString();
+            return (totalFee + totalFeeCurrentDay);
         }
 
-        private static bool IsTollFreeVehicle(VehicleTypes vehicleType)
+        public decimal GetTollFee(DateTime date, VehicleTypes vehicleType)
         {
-            return vehicleType.Equals(TollFreeVehicles.Emergency) ||
-                vehicleType.Equals(TollFreeVehicles.Bus) ||
-                vehicleType.Equals(TollFreeVehicles.Diplomat) ||
-                vehicleType.Equals(TollFreeVehicles.Motorcycle) ||
-                vehicleType.Equals(TollFreeVehicles.Military) ||
-                vehicleType.Equals(TollFreeVehicles.Foreign);
-        }
-
-        public static decimal GetTollFee(DateTime date, VehicleTypes vehicleType)
-        {
-            if (IsTollFreeDate(date) || IsTollFreeVehicle(vehicleType)) return 0;
+            if (IsTollFreeDate(date) || TollFreeVehicleTypes.Contains(vehicleType)) return 0;
 
             int hour = date.Hour;
             int minute = date.Minute;
@@ -93,7 +91,7 @@ namespace TollCalculator
             else return 0;
         }
 
-        private static Boolean IsTollFreeDate(DateTime date)
+        private bool IsTollFreeDate(DateTime date)
         {
             if (date.DayOfWeek == DayOfWeek.Saturday || date.DayOfWeek == DayOfWeek.Sunday) return true;
 
@@ -105,6 +103,17 @@ namespace TollCalculator
                 return true;
             }
             return false;
+        }
+
+        public bool IsQueryValid(Query query)
+        {
+            if (query == null
+                || (query.passingDates == null || query.passingDates?.Length == 0)
+                || !Enum.IsDefined(typeof(VehicleTypes), query.vehicleType))
+            {
+                return false;
+            }
+            return true;
         }
     }
 }
