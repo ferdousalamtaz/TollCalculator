@@ -1,22 +1,24 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 
-
-// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-
 namespace TollCalculator.Models
 {
     [ApiController]
     [Route("TollCalculator")]    
     public class TollController : ControllerBase
     {
-        [HttpPost("{query}")]
-        public ActionResult<string> CalculateToll(Query query)
+        private readonly ITollCalculator _tollCalculator;
+        public TollController(ITollCalculator tollCalculator)
         {
-            if (query == null )
+            _tollCalculator = tollCalculator;
+        }
+        [HttpGet]
+        public ActionResult<string> CalculateToll( [FromQuery] Query query)
+        {
+            if (query == null)
             {
                 return BadRequest();
             }
-            return Extensions.CalculateToll(query.vehicleType, query.passingDates);
+            return _tollCalculator.CalculateToll(query.vehicleType, query.passingDates);
         }
     }
 }

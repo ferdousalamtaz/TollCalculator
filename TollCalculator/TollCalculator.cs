@@ -2,7 +2,7 @@ using Nager.Date;
 using TollCalculator.Models;
 namespace TollCalculator
 {
-    public static class Extensions
+    public class TollCalculator:ITollCalculator
     {
         /**
              * Calculate the total toll fee for one day
@@ -12,7 +12,7 @@ namespace TollCalculator
              * @return - the total congestion tax for that day
              */
 
-        public static string CalculateToll(VehicleTypes vehicleType, DateTime[] dates)
+        public string CalculateToll(VehicleTypes vehicleType, DateTime[] dates)
         {
             var orderedDates = dates.OrderBy(x => x).ToList();
 
@@ -64,7 +64,7 @@ namespace TollCalculator
             return (totalFee + totalFeeCurrentDay).ToString();
         }
 
-        private static bool IsTollFreeVehicle(VehicleTypes vehicleType)
+        private  bool IsTollFreeVehicle(VehicleTypes vehicleType)
         {
             return vehicleType.Equals(TollFreeVehicles.Emergency) ||
                 vehicleType.Equals(TollFreeVehicles.Bus) ||
@@ -74,7 +74,7 @@ namespace TollCalculator
                 vehicleType.Equals(TollFreeVehicles.Foreign);
         }
 
-        public static decimal GetTollFee(DateTime date, VehicleTypes vehicleType)
+        private  decimal GetTollFee(DateTime date, VehicleTypes vehicleType)
         {
             if (IsTollFreeDate(date) || IsTollFreeVehicle(vehicleType)) return 0;
 
@@ -93,7 +93,7 @@ namespace TollCalculator
             else return 0;
         }
 
-        private static Boolean IsTollFreeDate(DateTime date)
+        private  Boolean IsTollFreeDate(DateTime date)
         {
             if (date.DayOfWeek == DayOfWeek.Saturday || date.DayOfWeek == DayOfWeek.Sunday) return true;
 
