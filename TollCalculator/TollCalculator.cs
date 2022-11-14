@@ -2,8 +2,9 @@ using Nager.Date;
 using TollCalculator.Models;
 namespace TollCalculator
 {
-    public class TollCalculator:ITollCalculator
+    public class TollCalculator : ITollCalculator
     {
+        private readonly DateTime _date;
         /**
              * Calculate the total toll fee for one day
              *
@@ -64,24 +65,16 @@ namespace TollCalculator
             return (totalFee + totalFeeCurrentDay).ToString();
         }
 
-        private  bool IsTollFreeVehicle(VehicleTypes vehicleType)
+        private readonly VehicleTypes[] tollFreeVehicles = { VehicleTypes.Emergency, VehicleTypes.Bus, VehicleTypes.Diplomat, VehicleTypes.Motorcycle, VehicleTypes.Motorcycle, VehicleTypes.Foreign };
+        private decimal GetTollFee(DateTime date, VehicleTypes vehicleType)
         {
-            return vehicleType.Equals(TollFreeVehicles.Emergency) ||
-                vehicleType.Equals(TollFreeVehicles.Bus) ||
-                vehicleType.Equals(TollFreeVehicles.Diplomat) ||
-                vehicleType.Equals(TollFreeVehicles.Motorcycle) ||
-                vehicleType.Equals(TollFreeVehicles.Military) ||
-                vehicleType.Equals(TollFreeVehicles.Foreign);
-        }
-
-        private  decimal GetTollFee(DateTime date, VehicleTypes vehicleType)
-        {
-            if (IsTollFreeDate(date) || IsTollFreeVehicle(vehicleType)) return 0;
+            if (IsTollFreeDate(date) || tollFreeVehicles.Contains(vehicleType)) return 0;
 
             int hour = date.Hour;
             int minute = date.Minute;
 
-            if (hour == 6 && minute >= 0 && minute <= 29) return 8;
+            if (hour == 18 && minute > 29 || (hour > 18 && hour < 6)) return 0;
+            else if (hour == 6 && minute >= 0 && minute <= 29) return 8;
             else if (hour == 6 && minute >= 30 && minute <= 59) return 13;
             else if (hour == 7 && minute >= 0 && minute <= 59) return 18;
             else if (hour == 8 && minute >= 0 && minute <= 29) return 13;
@@ -93,18 +86,13 @@ namespace TollCalculator
             else return 0;
         }
 
-        private  Boolean IsTollFreeDate(DateTime date)
+        private Boolean IsTollFreeDate(DateTime date)
         {
-            if (date.DayOfWeek == DayOfWeek.Saturday || date.DayOfWeek == DayOfWeek.Sunday) return true;
-
-            if (DateSystem.IsPublicHoliday(date, CountryCode.SE)
-                || DateSystem.IsPublicHoliday(date.AddDays(1), CountryCode.SE)
-                || date.Month == 7
-                )
-            {
-                return true;
-            }
-            return false;
+            return (date.DayOfWeek == DayOfWeek.Saturday ||
+                date.DayOfWeek == DayOfWeek.Sunday ||
+                date.Month == 7 ||
+                DateSystem.IsPublicHoliday(date, CountryCode.SE) ||
+                DateSystem.IsPublicHoliday(date.AddDays(1), CountryCode.SE));
         }
     }
 }
