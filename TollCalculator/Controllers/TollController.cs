@@ -1,10 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using TollCalculator.Models;
 using TollCalculator.Interfaces;
-using TollCalculator.Business;
 
-
-// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
 namespace TollCalculator
 {
@@ -31,8 +28,9 @@ namespace TollCalculator
         public ActionResult<decimal> CalculateToll([FromQuery] Query query)
         {
             if (!_tollManager.IsQueryValid(query))
-            {               
-               return BadRequest("Please provide a valid vehicleType and past dates.");
+            {
+                _logger.LogInformation( "Bad request.");
+                return BadRequest("Please provide a valid vehicleType and past dates.");
             }
 
             try
