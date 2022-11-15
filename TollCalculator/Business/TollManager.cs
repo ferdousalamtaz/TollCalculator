@@ -5,11 +5,13 @@ namespace TollCalculator.Business;
 
 public class TollManager : ITollManager
 {
-    private readonly IDatabaseProvider _databaseProvider;
+    private readonly IDataAccessor _dataAccessor;
+    private VehicleTypes[]? tollFreeVehicleTypes{get;set;}
+    private decimal dailyTollCeiling { get; set; }
 
-    public TollManager(IDatabaseProvider databaseProvider)
+    public TollManager(IDataAccessor databaseAccessor)
     {
-        _databaseProvider = databaseProvider;
+        _dataAccessor = databaseAccessor;
     }
 
     public decimal CalculateVehicleToll(VehicleTypes vehicleType, DateTime[] dates)
@@ -20,9 +22,11 @@ public class TollManager : ITollManager
         decimal totalToll = 0;
         decimal totalTollCurrentDay = 0;
         int uniqueDayCount = 1;
+        tollFreeVehicleTypes = _dataAccessor.GetTollFreeVehicleTypes();
+        
+        if (tollFreeVehicleTypes.Contains(vehicleType)) return 0;
 
-        if (_databaseProvider.IsVehicleTollFreeFromDB(vehicleType)) return 0;
-        decimal dailyTollCeiling = _databaseProvider.GetDailyTollCellingFromDB();
+        dailyTollCeiling = _dataAccessor.GetDailyTollCellingFromDB();
 
         foreach (DateTime date in orderedDates)
         {
@@ -32,6 +36,8 @@ public class TollManager : ITollManager
                 if (totalToll > (dailyTollCeiling * uniqueDayCount))
                 {
                     totalToll = dailyTollCeiling * uniqueDayCount;
+                    intervalStart = date;
+                    continue;
                 }
 
                 totalTollCurrentDay = 0;
@@ -39,8 +45,8 @@ public class TollManager : ITollManager
                 uniqueDayCount++;
             }
 
-            decimal nextToll = IsTollFreeDate(date) ? 0 : _databaseProvider.GetTollByTimeStampFromDB(date);
-            decimal tempToll = IsTollFreeDate(intervalStart) ? 0 : _databaseProvider.GetTollByTimeStampFromDB(intervalStart);
+            decimal nextToll = IsTollFreeDate(date) ? 0 : _dataAccessor.GetTollByTimeStampFromDB(date);
+            decimal tempToll = IsTollFreeDate(intervalStart) ? 0 : _dataAccessor.GetTollByTimeStampFromDB(intervalStart);
 
             TimeSpan diffInMillies = date - intervalStart;
             long minutes = (long)(diffInMillies.TotalMilliseconds / 1000 / 60);
@@ -77,6 +83,8 @@ public class TollManager : ITollManager
 
     public bool IsQueryValid(Query query)
     {
+        if (query == null) return false;
+        
        foreach (var d in query.passingDates.ToList())
         {
             if (DateTime.Compare(d, DateTime.Today) > 0)

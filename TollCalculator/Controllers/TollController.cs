@@ -32,7 +32,7 @@ namespace TollCalculator
         {
             if (!_tollManager.IsQueryValid(query))
             {               
-               return BadRequest("The provided query string is not valid. Please provide a valid vehicleType and dates not from the future.");
+               return BadRequest("Please provide a valid vehicleType and past dates.");
             }
 
             try
@@ -42,8 +42,8 @@ namespace TollCalculator
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to calculate toll");
-                throw;
+                _logger.LogError(ex, "Failed to calculate toll due to exception.");
+                return StatusCode(500, ex.Message);
             }
         }
     }

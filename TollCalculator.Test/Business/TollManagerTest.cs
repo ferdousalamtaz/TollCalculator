@@ -1,5 +1,4 @@
-
-using Moq;
+﻿using Moq;
 using System;
 using TollCalculator.Business;
 using TollCalculator.Interfaces;
@@ -9,24 +8,22 @@ using Xunit;
 using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Mvc;
 
-namespace TollCalculator.Tests.Business
+namespace TollCalculator.Tests
 {
-    public class TollControllerShould
+    public class TollManagerTest
     {
-        private readonly TollController _controller;
-        private readonly TollManager _manager;
-        private readonly Mock<IDatabaseProvider> _databaseMock;
-        private readonly Mock<ILogger<TollController>> _loggerMock;
 
-        public TollControllerShould()
+        private readonly TollController _controller;
+        private readonly TollManager _tollManager;
+        private readonly Mock<IDataAccessor> _databaseMock;
+        private readonly Mock<ILogger<TollController>> _loggerMock;
+        public TollManagerTest()
         {
             _loggerMock = new Mock<ILogger<TollController>>();
-            _databaseMock = new Mock<IDatabaseProvider>();
-            _manager = new TollManager(_databaseMock.Object);
-            _controller = new TollController(_manager, _loggerMock.Object);
-
+            _databaseMock = new Mock<IDataAccessor>();
+            _tollManager = new TollManager(_databaseMock.Object);
+            _controller = new TollController(_tollManager, _loggerMock.Object);
         }
-
 
         [Fact]
         public void CalculateToll_ForSingleDay_WithTollCellingAndExemptVehicleAndTollForTimeStampInfoFromDB_ThenVerifyDailyTollLimit()
@@ -38,6 +35,14 @@ namespace TollCalculator.Tests.Business
             DateTime passingDateOne = new DateTime(2022, 02, 28, 13, 10, 10, 10);
             DateTime passingDateTwo = new DateTime(2022, 02, 28, 15, 10, 10, 10);
 
+            VehicleTypes[] _tollFreeVehicleTypes = new VehicleTypes[]
+                                                      { VehicleTypes.Motorcycle,
+                                                        VehicleTypes.Emergency,
+                                                        VehicleTypes.Diplomat,
+                                                        VehicleTypes.Foreign,
+                                                        VehicleTypes.Military,
+                                                        VehicleTypes.Bus
+                                                      };
 
             DateTime[]? passingDates = new DateTime[]
                 {
@@ -46,7 +51,7 @@ namespace TollCalculator.Tests.Business
                 };
             Query q = new() { vehicleType = vehicleType, passingDates = passingDates };
 
-            _databaseMock.Setup(x => x.IsVehicleTollFreeFromDB(vehicleType)).Returns(false);
+            _databaseMock.Setup(x => x.GetTollFreeVehicleTypes()).Returns(_tollFreeVehicleTypes);
             _databaseMock.Setup(x => x.GetTollByTimeStampFromDB(It.IsAny<DateTime>())).Returns(expectedDummyTollforTimestamp);
             _databaseMock.Setup(x => x.GetDailyTollCellingFromDB()).Returns(expectedDummyTollCelling);
 
@@ -59,7 +64,7 @@ namespace TollCalculator.Tests.Business
             //Assert
             _databaseMock.Verify(mock => mock.GetTollByTimeStampFromDB(It.IsAny<DateTime>()), Times.AtLeast(2));
             _databaseMock.Verify(mock => mock.GetDailyTollCellingFromDB(), Times.AtMostOnce());
-            _databaseMock.Verify(mock => mock.IsVehicleTollFreeFromDB(vehicleType), Times.AtMostOnce());
+            _databaseMock.Verify(mock => mock.GetTollFreeVehicleTypes(), Times.AtMostOnce());
 
 
             actionResult.Should().NotBeNull();
@@ -73,6 +78,14 @@ namespace TollCalculator.Tests.Business
         public void CalculateToll_ForTollFreeVehicleFromDB_ThenVerifyIfTollIsZero()
         {
             //Arrange
+            VehicleTypes[] _tollFreeVehicleTypes = new VehicleTypes[]
+                                                     { VehicleTypes.Motorcycle,
+                                                        VehicleTypes.Emergency,
+                                                        VehicleTypes.Diplomat,
+                                                        VehicleTypes.Foreign,
+                                                        VehicleTypes.Military,
+                                                        VehicleTypes.Bus
+                                                     };
             VehicleTypes vehicleType = VehicleTypes.Diplomat;
             decimal expectedDummyTollforTimestamp = 75M;
             int expectedDummyTollCelling = 60;
@@ -86,8 +99,7 @@ namespace TollCalculator.Tests.Business
                         passingDateTwo
                 };
             Query q = new() { vehicleType = vehicleType, passingDates = passingDates };
-
-            _databaseMock.Setup(x => x.IsVehicleTollFreeFromDB(vehicleType)).Returns(true);
+            _databaseMock.Setup(x => x.GetTollFreeVehicleTypes()).Returns(_tollFreeVehicleTypes);
             _databaseMock.Setup(x => x.GetTollByTimeStampFromDB(It.IsAny<DateTime>())).Returns(expectedDummyTollforTimestamp);
             _databaseMock.Setup(x => x.GetDailyTollCellingFromDB()).Returns(expectedDummyTollCelling);
 
@@ -100,7 +112,8 @@ namespace TollCalculator.Tests.Business
             //Assert
             _databaseMock.Verify(mock => mock.GetTollByTimeStampFromDB(It.IsAny<DateTime>()), Times.Never);
             _databaseMock.Verify(mock => mock.GetDailyTollCellingFromDB(), Times.Never);
-            _databaseMock.Verify(mock => mock.IsVehicleTollFreeFromDB(vehicleType), Times.AtMostOnce());
+            _databaseMock.Verify(mock => mock.GetTollFreeVehicleTypes(), Times.AtMostOnce());
+
 
 
             actionResult.Should().NotBeNull();
@@ -127,7 +140,6 @@ namespace TollCalculator.Tests.Business
                 };
             Query q = new() { vehicleType = vehicleType, passingDates = passingDates };
 
-            _databaseMock.Setup(x => x.IsVehicleTollFreeFromDB(vehicleType)).Returns(false);
             _databaseMock.Setup(x => x.GetTollByTimeStampFromDB(It.IsAny<DateTime>())).Returns(expectedDummyTollforTimestamp);
             _databaseMock.Setup(x => x.GetDailyTollCellingFromDB()).Returns(expectedDummyTollCelling);
 
@@ -141,7 +153,6 @@ namespace TollCalculator.Tests.Business
             _databaseMock.Verify(mock => mock.GetTollByTimeStampFromDB(It.IsAny<DateTime>()), Times.Never);
 
             _databaseMock.Verify(mock => mock.GetDailyTollCellingFromDB(), Times.AtMostOnce);
-            _databaseMock.Verify(mock => mock.IsVehicleTollFreeFromDB(vehicleType), Times.AtMostOnce());
 
 
             actionResult.Should().NotBeNull();
@@ -150,61 +161,6 @@ namespace TollCalculator.Tests.Business
             actual.Should().Be(0);
         }
 
-        
-        [Fact]
-        public void Return_Exception_WithNullRequest()
-        {
-            //Arrange
-            //Act
-            try
-            {
-                var actionResult = _controller.CalculateToll(null);
-            }
-            catch (Exception ex)
-            {
-
-            }          
-            //Assert
-            _databaseMock.Verify(mock => mock.GetTollByTimeStampFromDB(It.IsAny<DateTime>()), Times.Never);
-            _databaseMock.Verify(mock => mock.GetDailyTollCellingFromDB(), Times.Never);
-            _databaseMock.Verify(mock => mock.IsVehicleTollFreeFromDB(It.IsAny<VehicleTypes>()), Times.Never());
-        }
-
-        [Fact]
-        public void Return_BadRequestResponse_WithDatesFromFuture()
-        {
-            //Arrange
-            VehicleTypes vehicleType = VehicleTypes.Car;
-            DateTime passingDateOne = new DateTime(2023, 02, 27, 13, 10, 10, 10);
-            DateTime passingDateTwo = new DateTime(2023, 02, 27, 15, 10, 10, 10);
-
-
-            DateTime[]? passingDates = new DateTime[]
-                {
-                        passingDateOne,
-                        passingDateTwo
-                };
-            Query q = new() { vehicleType = vehicleType, passingDates = passingDates };
-
-            //Act
-            var actionResult = _controller.CalculateToll(q);
-            BadRequestObjectResult? objectResult = actionResult.Result as BadRequestObjectResult;
-            var errorMessage = objectResult?.Value;
-
-
-
-            //Assert
-            _databaseMock.Verify(mock => mock.GetTollByTimeStampFromDB(It.IsAny<DateTime>()), Times.Never);
-            _databaseMock.Verify(mock => mock.GetDailyTollCellingFromDB(), Times.Never);
-            _databaseMock.Verify(mock => mock.IsVehicleTollFreeFromDB(It.IsAny<VehicleTypes>()), Times.Never());
-
-
-
-            Assert.IsType<BadRequestObjectResult>(actionResult.Result);
-            Assert.Equal("The provided query string is not valid. Please provide a valid vehicleType and dates not from the future.", errorMessage);
-        }
-
-         
-
     }
+
 }

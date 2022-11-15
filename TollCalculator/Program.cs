@@ -10,7 +10,7 @@ WebApplicationBuilder? builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers()
     .AddJsonOptions(opts => opts.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
-builder.Services.AddTransient<IDatabaseProvider, DatabaseProvider>();
+builder.Services.AddTransient<IDataAccessor, DataAccssor>();
 builder.Services.AddTransient<ITollManager, TollManager>();
 
 
