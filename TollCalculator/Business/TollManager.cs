@@ -46,7 +46,7 @@ public class TollManager : ITollManager
             }
 
             decimal nextToll = IsTollFreeDate(date) ? 0 : _dataAccessor.GetTollByTimeStampFromDB(date);
-            decimal tempToll = IsTollFreeDate(intervalStart) ? 0 : _dataAccessor.GetTollByTimeStampFromDB(intervalStart);
+            decimal tempToll = IsTollFreeDate(intervalStart) ? 0 : dates.Count() == 1 ? 0: _dataAccessor.GetTollByTimeStampFromDB(intervalStart);
 
             TimeSpan diffInMillies = date - intervalStart;
             long minutes = (long)(diffInMillies.TotalMilliseconds / 1000 / 60);
@@ -87,7 +87,7 @@ public class TollManager : ITollManager
         
        foreach (var d in query.passingDates.ToList())
         {
-            if (DateTime.Compare(d, DateTime.Today) > 0)
+            if (DateTime.Compare(d, DateTime.Now) > 0)
             {
                 return false;
             }
