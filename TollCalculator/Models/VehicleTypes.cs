@@ -1,5 +1,5 @@
 namespace TollCalculator.Models
-{    
+{
     public enum VehicleTypes
     {
         Motorcycle = 0,
@@ -10,5 +10,5 @@ namespace TollCalculator.Models
         Military = 5,
         Bus = 6,
         Car = 7,
-    }    
+    }
 }
